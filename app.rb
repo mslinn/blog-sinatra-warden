@@ -1,14 +1,14 @@
 require 'colorize' # Just to add fancy colour in the server log
 require 'rack-flash'
 require 'sinatra'
-
-set :database, { adapter: 'sqlite3', database: 'db/foo.sqlite3' }
-
+require 'sinatra/json'
 require 'sinatra/activerecord'
 require 'warden'
 require_relative 'model'
 
-use Rack::Session::Pool, secret: SecureRandom.uuid
+set :database_file, 'config/database.yml'
+
+use Rack::Session::Cookie, secret: SecureRandom.uuid
 
 use Rack::Flash
 
@@ -40,7 +40,7 @@ Warden::Strategies.add(:password) do
     puts '(Warden::Strategies) authenticate!'.colorize(:blue)
     user = User.find_by(username: params['username'])
 
-    if user && user.authenticate(params['password'])
+    if user&.authenticate(params['password'])
       puts '(Warden::Strategies) user present and authenticate returns true'.colorize(:green)
       success!(user)
     else
@@ -53,10 +53,9 @@ end
 # Without this, failed calls to authenticate! would redirect based on the method of the request
 # which means we'd have to implement GET /unauthenticated, POST /unauthenticated, etc.
 # Doing this, we'll just deal with one route of failed authentication -> POST /unauthenticated
-Warden::Manager.before_failure do |env,opts|
+Warden::Manager.before_failure do |env, opts|
   env['REQUEST_METHOD'] = 'POST'
 end
-
 
 #
 # HELPERS
@@ -72,8 +71,6 @@ end
 before do
   @current_user = env['warden'].user
 end
-
-
 
 #
 # ROUTES
