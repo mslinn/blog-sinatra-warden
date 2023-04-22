@@ -8,6 +8,8 @@ require_relative 'model'
 
 set :database_file, 'config/database.yml'
 
+enable :sessions
+
 use Rack::Flash
 
 use Rack::Session::Cookie, secret: SecureRandom.uuid
@@ -165,4 +167,8 @@ end
 
 not_found do
   redirect '/' # catch redirects to GET '/session'
+end
+
+error 500 do
+  "500 Error: #{request.request_method} #{env['REQUEST_PATH']}"
 end
