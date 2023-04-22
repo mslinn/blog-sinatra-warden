@@ -17,3 +17,10 @@
     </div>
   </div>
 </form>
+
+<p>
+  <a class="control" href='/forgot_password'>Forgot password</a>
+</p>
+<% if authenticated? %>
+  <a class="control" href='/reset_password'>Change password</a>
+<% end %>

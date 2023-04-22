@@ -1,3 +1,9 @@
+#username {
+  background-color: transparent;
+  color: gray;
+  font-family: monospace;
+}
+
 .navbar {
   z-index: 1;
 }
