@@ -1,5 +1,5 @@
 <% [:error, :success].each do |name| %>
-  <% if flash.has?(name) %>
+  <% if flash.has?(name) && !flash[name].to_s.strip.empty? %>
     <div class="flash <%= "flash-#{ name }" %>">
       <%= flash[name] %>
     </div>
