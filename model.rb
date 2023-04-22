@@ -8,15 +8,15 @@ class User < ActiveRecord::Base
   validates :username, presence: true
 
   def password
-    @password ||= Password.new(self.encrypted_password)
+    @password ||= Password.new(encrypted_password)
   end
 
   def password=(new_password)
-    @password = Password.create(new_password)
+    @password = Password.create new_password
     self.encrypted_password = @password
   end
 
   def authenticate(attempted_password)
-    password == attempted_password
+    password == attempted_password # TODO: should this compare to @password?
   end
 end

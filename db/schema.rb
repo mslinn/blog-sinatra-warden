@@ -8,14 +8,13 @@
 # migrations from scratch. Old migrations may fail to apply correctly if those
 # migrations use external dependencies or application code.
 #
-# It's strongly recommended that you check this file into your version control system.
+# This file should be checked into the version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2018_01_26_153804) do
+ActiveRecord::Schema[7.0].define(version: 2018_01_26_153804) do # rubocop:disable Style/NumericLiterals
   create_table 'users', force: :cascade do |t|
     t.string 'username'
     t.string 'encrypted_password'
     t.datetime 'created_at', precision: nil, null: false
     t.datetime 'updated_at', precision: nil, null: false
   end
-
 end

@@ -8,14 +8,15 @@ require_relative 'model'
 
 set :database_file, 'config/database.yml'
 
-use Rack::Session::Cookie, secret: SecureRandom.uuid
-
 use Rack::Flash
+
+use Rack::Session::Cookie, secret: SecureRandom.uuid
 
 use Warden::Manager do |config|
   # Tell Warden how to save our User info into a session.  Sessions can only take strings,
   # not Ruby code, we'll store the User's `id`
   config.serialize_into_session(&:id)
+
   # Tell Warden how to take what we've stored in the session and get a User from that information.
   config.serialize_from_session { |id| User.find(id) }
 
@@ -28,7 +29,6 @@ use Warden::Manager do |config|
   # using the modular sinatra style, then you'd use `self` or the class name of your app
   config.failure_app = Sinatra::Application
 end
-
 
 Warden::Strategies.add(:password) do
   def valid?
@@ -53,7 +53,7 @@ end
 # Without this, failed calls to authenticate! would redirect based on the method of the request
 # which means we'd have to implement GET /unauthenticated, POST /unauthenticated, etc.
 # Doing this, we'll just deal with one route of failed authentication -> POST /unauthenticated
-Warden::Manager.before_failure do |env, opts|
+Warden::Manager.before_failure do |env, _opts|
   env['REQUEST_METHOD'] = 'POST'
 end
 
@@ -66,7 +66,6 @@ helpers do
     env['warden'].user.present?
   end
 end
-
 
 before do
   @current_user = env['warden'].user
@@ -93,9 +92,9 @@ post '/login' do
   flash[:success] = 'Logged in!'
 
   redirect_to = session[:return_to] || '/protected'
-  puts "logged in, redirect to #{ redirect_to }".colorize(:green)
+  puts "logged in, redirect to #{redirect_to}".colorize(:green)
 
-  redirect( redirect_to )
+  redirect redirect_to
 end
 
 get '/logout' do
@@ -116,4 +115,54 @@ end
 get '/protected' do
   env['warden'].authenticate!
   erb :protected
+end
+
+get '/forgot_password' do
+  erb :forgot_password
+end
+
+post '/forgot_password' do
+  user = User.find_by(email: params[:email])
+  if user
+    user.generate_password_reset_token!
+    flash[:notice] = 'An email has been sent with instructions on how to reset your password.'
+  else
+    flash[:error] = 'No user was found with that email address.'
+  end
+  redirect '/forgot_password'
+end
+
+get '/reset_password/:token' do
+  user = User.find_by(password_reset_token: params[:token])
+  if user && @user.password_reset_sent_at > 2.hours.ago
+    erb :reset_password
+  else
+    flash[:error] = 'The password reset link has expired or is invalid.'
+    redirect '/forgot_password'
+  end
+end
+
+post '/reset_password/:token' do
+  user = User.find_by(password_reset_token: params[:token])
+  unless user
+    flash[:error] = 'Invalid password reset link.'
+    redirect '/login'
+    return
+  end
+  if user.password_reset_sent_at < 2.hours.ago
+    if user.update(password: params[:password], password_confirmation: params[:password_confirmation])
+      user.clear_password_reset_token!
+      flash[:notice] = 'Your password has been reset.'
+      redirect '/login'
+    else
+      erb :reset_password
+    end
+  else
+    flash[:error] = 'The password reset link has expired or is invalid.'
+    redirect '/forgot_password'
+  end
+end
+
+not_found do
+  redirect '/' # catch redirects to GET '/session'
 end
